@@ -1,0 +1,58 @@
+{:enums
+ {:status
+  {:description "The status flag of a quiz"
+   :values      [:ACTIVE :INACTIVE]}}
+
+ :objects
+ {:user
+  {:fields   {:first_name {:type String}
+              :last_name  {:type String}
+              :email      {:type String}}}
+
+  :option
+  {:fields {:id        {:type Int}
+            :name      {:type String}
+            :question  {:type :question}
+            :sentiment {:type Int}}}
+  :quiz
+  {:fields {:id          {:type Int}
+            :description {:type String}
+            :status      {:type Int}}}
+  :question
+  {:fields {:id       {:type Int}
+            :question {:type String}
+            :sub_note {:type String}
+            :quiz     {:type :quiz}}}
+  :answer
+  {:fields {:id     {:type Int}
+            :user   {:type :user}
+            :option {:type :option}}}
+  :city
+  {:fields {:id   {:type Int}
+            :name {:type String}}}
+  :setting
+  {:fields {:name  {:type String}
+            :value {:type String}}}}
+
+ ;; TODO Improve object and queries Schema!!
+ :queries
+ {:user         {:type    :user
+                 :args    {:id    {:type Int}
+                           :email {:type String}}
+                 :resolve :get-user}
+
+  :getQuiz      {:type    :quiz
+                 :args    {:id  {:type Int}}
+                 :resolve :get-quiz}
+
+  :getQuizzes   {:type    (list :quiz)
+                 :resolve :get-quizzes}
+
+  :getQuestions {:type    (list :question)
+                 :args    {:quizId {:type Int}}
+                 :resolve :get-questions}
+
+  :getQuestion  {:type    :question
+                 :args    {:quizId     {:type Int}
+                           :questionId {:type Int}}
+                 :resolve :get-question}}}
