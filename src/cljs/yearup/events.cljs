@@ -126,6 +126,22 @@
     {:db (assoc-in db [:answers :selections] (conj (get-in db [:answers :selections]) (:id option)))
      :dispatch [:push-answer]}))
 
+(rf/reg-event-fx
+  :adjust-ratio
+  (fn [_ [_ ratio]]
+    {:http-xhrio {:method          :post
+                  :uri             "/api/v1/update/ratio"
+                  :params          {:r-ratio (js/parseInt (:r-ratio ratio))}
+                  :format          (ajax/json-request-format)
+                  :response-format (ajax/json-response-format)
+                  :on-success      [:fetch-report]
+                  :on-failure      [:common/set-error]}} ))
+
+(rf/reg-event-fx
+  :submit-ratio
+  (fn [_ [_ ratio]]
+    {:dispatch [:adjust-ratio ratio]}))
+
 (rf/reg-event-db
   :question-response
   (fn [db [_ responses]]

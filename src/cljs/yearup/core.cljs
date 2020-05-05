@@ -13,8 +13,16 @@
     [reitit.frontend.easy :as rfe]
     [clojure.string :as string]
     [tick.locale-en-us]
-    [tick.alpha.api :as t])
+    [tick.alpha.api :as t]
+    [clojure.spec.alpha :as s])
   (:import goog.History))
+
+(s/def ::r-ratio (s/and integer? pos?))
+
+(defn parse-date
+  ""
+  [tagged]
+  (t/format (t/formatter "HH:mm MM/dd/yyyy ") (t/parse (.-rep tagged))))
 
 (defn nav-link [uri title page]
   [:a.navbar-item
@@ -109,11 +117,11 @@
                  [:th "Accepted Responses?"]]]
                [:tbody
                 (for [response (:response report)]
-                  [:tr
+                  ^{:key (parse-date (:date response)) }[:tr
                    [:td [:a {:href "#" :data-toggle "modal" :data-target ".bs-example-modal-lg"
                              :on-click #(rf/dispatch [:question-response (:responses response)])} (:email response)]]
                    [:td (:city response)]
-                   [:td (t/format (t/formatter "HH:mm MM/dd/yyyy ") (t/parse (.-rep (:date response))))]                                   ;
+                   [:td (parse-date (:date response))]                                   ;
                    (cond (= (:accepted response) "Yes") [:td [:span.badge.badge-success "Yes"]]
                          (= (:accepted response) "No") [:td [:span.badge.badge-danger "No"]])])]]
               [:div.modal.fade.bs-example-modal-lg {:tabIndex "-1" :role "dialog" :aria-hidden "true"}
@@ -131,11 +139,11 @@
                    [:tbody
                     (when-let [current @(rf/subscribe [:get-current-response])]
                       (for [question-response current]
-                       [:tr
+                        ^{:key question-response}[:tr
                                                   [:td (:question question-response)]
                                                   [:td (:option question-response)]]))]]]
                  [:div.modal-footer
-                  [:button.btn.btn-secondary {:type "button" :data-dismiss "modal" :on-dispose #(rf/dispatch [:page/dispose] )} "Close"]]]]]]]]]]]
+                  [:button.btn.btn-secondary {:type "button" :data-dismiss "modal" :on-click #(rf/dispatch [:page/dispose] )} "Close"]]]]]]]]]]]
         [:div.col-md-4.col-sm-4
          ;[:div.x_panel.tile.fixed_height_320.overflow_hidden
          ; [:div.x_title
@@ -171,23 +179,30 @@
          ;                [:td
          ;                 [:p [:i.fa.fa-square.purple] "Charlotte"]]
          ;                [:td "20%"]]]]]]]]]]
-         [:div.x_panel.tile.fixed_height_320.overflow_hidden
-          [:div.x_title
-           [:h2 "Settings"]
-           [:ul.nav.navbar-right.panel_toolbox
-            [:li [:a.collapse-link [:i.fa.fa-chevron-up]]]
-            [:li [:a.close-link [:i.fa.fa-close]]]]
-           [:div.clearfix]]
-          [:div.x_content
-           [:p.text-muted.font-13.m-b-30 "Adjust system settings"]
-           [:form#demo-form2.form-horizontal.form-label-left {:data-parsley-validate "true"}
-            [:div.item.form-group
-             [:label.col-form-label.col-md-3.col-sm-3.label-align {:for "ratio-percent"} "Ratio %"]
-             [:div.col-md-6.col-sm-6
-              [:input#ratio-percent.form-control {:type "text" :placeholder (:ratio report)}]]]
-            [:div.item.form-group
-             [:div.col-md-6.col-sm-6.offset-md-3
-              [:button.btn.btn-success {:type "button" :on-click #()} "Adjust"]]]]]]]
+         (let [vals-ratio (r/atom {:r-ratio (:ratio report)})] [:div.x_panel.tile.fixed_height_320.overflow_hidden
+           [:div.x_title
+            [:h2 "Settings"]
+            [:ul.nav.navbar-right.panel_toolbox
+             [:li [:a.collapse-link [:i.fa.fa-chevron-up]]]
+             [:li [:a.close-link [:i.fa.fa-close]]]]
+            [:div.clearfix]]
+           [:div.x_content
+            [:p.text-muted.font-13.m-b-30 "Adjust system settings"]
+            (when-let [error-message @(rf/subscribe [:common/error])]
+              [:p {:style {:color "red"}} error-message])
+            [:form#demo-form2.form-horizontal.form-label-left {:data-parsley-validate "true"}
+             [:div.item.form-group
+              [:label.col-form-label.col-md-3.col-sm-3.label-align {:for "ratio-percent"} "Ratio %"]
+              [:div.col-md-6.col-sm-6
+               [:input#ratio-percent.form-control {:type        "text"
+                                                   :placeholder (:ratio report)
+                                                   :on-change   #(swap! vals-ratio assoc :r-ratio (-> % .-target .-value))}]]]
+             [:div.item.form-group
+              [:div.col-md-6.col-sm-6.offset-md-3
+               [:button.btn.btn-success {:type "button" :on-click #(if (or (not (s/valid? ::r-ratio (js/parseInt (:r-ratio @vals-ratio))))
+                                                                           (nil? (:r-ratio @vals-ratio)) (empty? (:r-ratio @vals-ratio)))
+                                                                     (do (rf/dispatch [:common/set-error "Enter a valid number"]))
+                                                                     (do (rf/dispatch [:clear-exceptions]) (rf/dispatch [:submit-ratio @vals-ratio])))} "Adjust"]]]]]])]
         ]]
       [:br]]
      [:footer
