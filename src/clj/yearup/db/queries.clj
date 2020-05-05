@@ -95,6 +95,11 @@
   [email]
   (db/create-user-return-id! {:email email :first_name nil :last_name nil :pass nil}))
 
+(defn update-ratio
+  ""
+  [ratio]
+  (db/update-setting! {:value ratio :name "RATIO"}))
+
 (defn report
   "Get all the data needed for the admin dashboard"
   []

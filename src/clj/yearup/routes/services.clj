@@ -154,4 +154,12 @@
            :responses  {200 {:body {:data map?}}}
            :handler    (fn [{{{:keys [name]} :body} :parameters}]
                          {:status 200
-                          :body   {:data (db/get-setting name)}})}}]])
+                          :body   {:data (db/get-setting name)}})}}]
+   ["/update"
+    ["/ratio"
+     {:post {:summary    "adjust system ratio"
+            :parameters {:body {:r-ratio int?}}
+            :responses  {200 {:body {:data int?}}}
+            :handler    (fn [{{{:keys [r-ratio]} :body} :parameters}]
+                          {:status 200
+                           :body   {:data (db/update-ratio r-ratio)}})}}]]])
