@@ -17,7 +17,7 @@
     [clojure.spec.alpha :as s])
   (:import goog.History))
 
-(s/def ::r-ratio (s/and integer? pos?))
+(s/def ::r-ratio (s/and integer? pos? #(<= % 100)))
 
 (defn parse-date
   ""
@@ -190,7 +190,11 @@
             [:p.text-muted.font-13.m-b-30 "Adjust system settings"]
             (when-let [error-message @(rf/subscribe [:common/error])]
               [:p {:style {:color "red"}} error-message])
-            [:form#demo-form2.form-horizontal.form-label-left {:data-parsley-validate "true"}
+            [:form#demo-form2.form-horizontal.form-label-left {:action      "#" :data-parsley-validate "true"
+                                                               :on-key-down #(if (= (.-key %) "Enter")
+                                                                               (if (not (s/valid? ::r-ratio (js/parseInt (:r-ratio @vals-ratio))))
+                                                                                 (do (rf/dispatch [:common/set-error "Enter a valid number"]))
+                                                                                 (do (rf/dispatch [:clear-exceptions]) (rf/dispatch [:submit-ratio @vals-ratio]))))}
              [:div.item.form-group
               [:label.col-form-label.col-md-3.col-sm-3.label-align {:for "ratio-percent"} "Ratio %"]
               [:div.col-md-6.col-sm-6
@@ -199,8 +203,7 @@
                                                    :on-change   #(swap! vals-ratio assoc :r-ratio (-> % .-target .-value))}]]]
              [:div.item.form-group
               [:div.col-md-6.col-sm-6.offset-md-3
-               [:button.btn.btn-success {:type "button" :on-click #(if (or (not (s/valid? ::r-ratio (js/parseInt (:r-ratio @vals-ratio))))
-                                                                           (nil? (:r-ratio @vals-ratio)) (empty? (:r-ratio @vals-ratio)))
+               [:button.btn.btn-success {:type "button" :on-click #(if (not (s/valid? ::r-ratio (js/parseInt (:r-ratio @vals-ratio))))
                                                                      (do (rf/dispatch [:common/set-error "Enter a valid number"]))
                                                                      (do (rf/dispatch [:clear-exceptions]) (rf/dispatch [:submit-ratio @vals-ratio])))} "Adjust"]]]]]])]
         ]]
