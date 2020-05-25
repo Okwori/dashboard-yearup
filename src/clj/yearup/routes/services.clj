@@ -69,12 +69,21 @@
                             :body   (db/get-questions quizId)})}}] ]
 
    ["/report"
-    {:post {:summary    "returns all the data needs for the dashboard"
-            :parameters nil
-            :responses  {200 {:body map?}}
-            :handler    (fn [{{{:keys []} :body} :parameters}]
-                          {:status 200
-                           :body   (db/report)})}}]
+    ["/"
+     {:post {:summary    "returns all the data needs for the dashboard"
+             :parameters nil
+             :responses  {200 {:body map?}}
+             :handler    (fn [{{{:keys []} :body} :parameters}]
+                           {:status 200
+                            :body   (db/report)})}}]
+
+    ["/selection"
+     {:post {:summary    "returns the answer for a particular user given the email and quiz id"
+             :parameters {:body {:quizId int? :email string?}}
+             :responses  {200 {:body {:data coll?}}}
+             :handler    (fn [{{{:keys [quizId email]} :body} :parameters}]
+                           {:status 200
+                            :body   (db/get-answer-by-user quizId email)})}}]]
 
    ["/submit"
     {:post {:summary    "accepts a user and a collection options selected, returns message based on options"
@@ -140,13 +149,21 @@
                          {:status 200
                           :body   {:data {:video (db/get-video-url)}}})}}]
 
-   ["/cities"
-    {:get {:summary    "returns the list of cities on the YearUp programme"
-           :parameters nil
-           :responses  {200 {:body {:data {:cities vector?}}}}
-           :handler    (fn [{{{:keys []} :query} :parameters}]
-                         {:status 200
-                          :body   {:data {:cities (db/get-cities)}}})}}]
+   ["/city"
+    ["/list"
+     {:get {:summary    "returns the list of cities on the YearUp programme"
+            :parameters nil
+            :responses  {200 {:body {:data {:cities vector?}}}}
+            :handler    (fn [{{{:keys []} :query} :parameters}]
+                          {:status 200
+                           :body   {:data {:cities (db/get-cities)}}})}}]
+    ["/create"
+     {:post {:summary    "create a new city record and returns 1"
+             :parameters {:body {:name string?}}
+             :responses  {200 {:body {:id int?}}}
+             :handler    (fn [{{{:keys [name]} :body} :parameters}]
+                           {:status 200
+                            :body   (db/create-city name)})}}]]
 
    ["/setting"
     {:get {:summary    "returns a particular setting with the name specified"
