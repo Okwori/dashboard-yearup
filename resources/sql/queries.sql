@@ -27,7 +27,7 @@ WHERE id = :id;
 
 -- :name get-user-by-email :? :1
 -- :doc retrieve record of all users
-SELECT first_name, last_name, email
+SELECT id, first_name, last_name, email
 FROM users
 WHERE email = :email;
 
@@ -312,3 +312,9 @@ SELECT *
 FROM answer
 WHERE user_id = :user-id;
 
+-- :name get-full-report :? :*
+SELECT quiz.desc quiz, u.email email, q.question question, o.name response, c.name city, a.date date
+FROM answer a inner join users u on a.user_id = u.id inner join city c on a.city_id = c.id
+inner join option o on a.option_id = o.id inner join question q on o.question_id = q.id
+inner join quiz on q.quiz_id = quiz.id
+WHERE quiz.status = 1;
