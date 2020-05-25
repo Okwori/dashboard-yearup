@@ -59,16 +59,14 @@
               status (:status query)]
           {:quizId      (:id query)
            :description (:desc query)
-           :status      (cond
-                          (= status 1) "ACTIVE"
-                          (= status 2) "INACTIVE")}))
+           :status      (cond (= status 1) "ACTIVE"
+                              (= status 2) "INACTIVE")}))
   ([] (into [] (let [query (db/get-quizzes)]
                  (map #(let [status (:status %)]
                          {:quizId      (:id %)
                           :description (:desc %)
-                          :status      (cond
-                                         (= status 1) "ACTIVE"
-                                         (= status 2) "INACTIVE")}) query)))))
+                          :status      (cond (= status 1) "ACTIVE"
+                                             (= status 2) "INACTIVE")}) query)))))
 
 (defn get-user-by-id
   "Gets a user by Id specified"
@@ -100,8 +98,13 @@
   [ratio]
   (db/update-setting! {:value ratio :name "RATIO"}))
 
+(defn create-city
+  "Create a new city record with the name"
+  [city-name]
+  (db/create-city! {:name city-name}))
+
 (defn report
-  "Get all the data needed for the admin dashboard"
+  "Get all the data for the admin dashboard grid"
   []
   (let [q1 (db/get-answers)
         distinct-user-ids (into [] (map #(:user_id %) (db/get-distinct-user)))
@@ -117,11 +120,12 @@
                                              count-m (count m)]
                                          (if (>= (* (/ total-sentiments count-m) 100) ratio)
                                            "Yes" "No"))
-                            :responses (into [] (map (fn [item-m]
-                                                       (let [option-m (db/get-option {:id (:option_id item-m)})]
-                                                         {:question (:question (db/get-question {:quiz-id 1
-                                                                                                 :id      (:question_id option-m)}))
-                                                          :option   (:name option-m)})) m))})) distinct-user-ids)
+                            ;:responses (into [] (map (fn [item-m]
+                            ;                           (let [option-m (db/get-option {:id (:option_id item-m)})]
+                            ;                             {:question (:question (db/get-question {:quiz-id 1
+                            ;                                                                     :id      (:question_id option-m)}))
+                            ;                              :option   (:name option-m)})) m))
+                            })) distinct-user-ids)
         total (count distinct-user-ids)
         positive (apply + (map #(if (= (:accepted %) "Yes") 1 0) responses))]
     {:totalNo    total
@@ -129,3 +133,17 @@
      :negativeNo (- total positive)
      :ratio      ratio
      :response   (into [] responses)}) )
+
+(defn get-answer-by-user [quiz-id email]
+  (let [user-id (:id (db/get-user-by-email {:email email}))
+        answers (db/get-answers-by-user {:user-id user-id})]
+    {:data (reverse (into [] (map (fn [answer-item]
+                            (let [answer-option (db/get-option {:id (:option_id answer-item)})
+                                  question (db/get-question {:quiz-id quiz-id
+                                                             :id      (:question_id answer-option)})]
+                              {:id (:slide_order question)
+                               :question (:question question)
+                               :option   (:name answer-option)})) answers)))}))
+
+(defn get-full-report []
+  (db/get-full-report))
