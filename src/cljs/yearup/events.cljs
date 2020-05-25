@@ -143,6 +143,38 @@
     {:dispatch [:adjust-ratio ratio]}))
 
 (rf/reg-event-db
+  :update-city
+  (fn [db [_ cities]]
+    (assoc db :cities (get-in cities [:data :cities]))))
+
+(rf/reg-event-fx
+  :get-cities
+  (fn [_ _]
+    {:http-xhrio {:method          :get
+                  :uri             "/api/v1/city/list"
+                  :params          nil
+                  :format          (ajax/json-request-format)
+                  :response-format (ajax/transit-response-format)
+                  :on-success      [:update-city]
+                  :on-failure      [:common/set-error]}} ))
+
+(rf/reg-event-fx
+  :create-city
+  (fn [_ [_ city]]
+    {:http-xhrio {:method          :post
+                  :uri             "/api/v1/city/create"
+                  :params          {:name city}
+                  :format          (ajax/json-request-format)
+                  :response-format (ajax/json-response-format)
+                  :on-success      [:get-cities]
+                  :on-failure      [:common/set-error]}} ))
+
+(rf/reg-event-fx
+  :submit-city
+  (fn [_ [_ city]]
+    {:dispatch [:create-city (:r-city city)]}))
+
+(rf/reg-event-db
   :question-response
   (fn [db [_ responses]]
     (assoc db :current-responses responses)))
@@ -204,6 +236,11 @@
   :<- [:common/route]
   (fn [route _]
     (-> route :data :view)))
+
+(rf/reg-sub
+  :page/get-cities
+  (fn [db _]
+    (:cities db)))
 
 (rf/reg-sub
   :answers

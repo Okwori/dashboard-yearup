@@ -1,5 +1,7 @@
 (ns yearup.core
   (:require
+    [clojure.string :as string]
+    [clojure.spec.alpha :as s]
     [day8.re-frame.http-fx]
     [reagent.dom :as rdom]
     [reagent.core :as r]
@@ -11,17 +13,13 @@
     [yearup.events]
     [reitit.core :as reitit]
     [reitit.frontend.easy :as rfe]
-    [clojure.string :as string]
     [tick.locale-en-us]
-    [tick.alpha.api :as t]
-    [clojure.spec.alpha :as s])
+    [tick.alpha.api :as t])
   (:import goog.History))
 
 (s/def ::r-ratio (s/and integer? pos? #(<= % 100)))
 
-(defn parse-date
-  ""
-  [tagged]
+(defn parse-date [tagged]
   (t/format (t/formatter "HH:mm MM/dd/yyyy ") (t/parse (.-rep tagged))))
 
 (defn nav-link [uri title page]
@@ -46,7 +44,7 @@
                  [nav-link "#/" "Home" :home]
                  [nav-link "#/about" "About" :about]]]]))
 
-(defn about-page [] [:p "About"])
+(defn setting-page [] [:p "About"] )
 
 (defn home-page []
   (when-let [report @(rf/subscribe [:page/report])]
@@ -143,7 +141,8 @@
                                                   [:td (:question question-response)]
                                                   [:td (:option question-response)]]))]]]
                  [:div.modal-footer
-                  [:button.btn.btn-secondary {:type "button" :data-dismiss "modal" :on-click #(rf/dispatch [:page/dispose] )} "Close"]]]]]]]]]]]
+                  [:button.btn.btn-secondary {:type "button" :data-dismiss "modal"
+                                              :on-click #(rf/dispatch [:page/dispose] )} "Close"]]]]]]]]]]]
         [:div.col-md-4.col-sm-4
          ;[:div.x_panel.tile.fixed_height_320.overflow_hidden
          ; [:div.x_title
@@ -194,7 +193,8 @@
                                                                :on-key-down #(if (= (.-key %) "Enter")
                                                                                (if (not (s/valid? ::r-ratio (js/parseInt (:r-ratio @vals-ratio))))
                                                                                  (do (rf/dispatch [:common/set-error "Enter a valid number"]))
-                                                                                 (do (rf/dispatch [:clear-exceptions]) (rf/dispatch [:submit-ratio @vals-ratio]))))}
+                                                                                 (do (rf/dispatch [:clear-exceptions])
+                                                                                     (rf/dispatch [:submit-ratio @vals-ratio]))))}
              [:div.item.form-group
               [:label.col-form-label.col-md-3.col-sm-3.label-align {:for "ratio-percent"} "Ratio %"]
               [:div.col-md-6.col-sm-6
@@ -203,20 +203,56 @@
                                                    :on-change   #(swap! vals-ratio assoc :r-ratio (-> % .-target .-value))}]]]
              [:div.item.form-group
               [:div.col-md-6.col-sm-6.offset-md-3
-               [:button.btn.btn-success {:type "button" :on-click #(if (not (s/valid? ::r-ratio (js/parseInt (:r-ratio @vals-ratio))))
-                                                                     (do (rf/dispatch [:common/set-error "Enter a valid number"]))
-                                                                     (do (rf/dispatch [:clear-exceptions]) (rf/dispatch [:submit-ratio @vals-ratio])))} "Adjust"]]]]]])]
+               [:button.btn.btn-success {:type "button"
+                                         :on-click #(if (not (s/valid? ::r-ratio (js/parseInt (:r-ratio @vals-ratio))))
+                                                      (do (rf/dispatch [:common/set-error "Enter a valid number"]))
+                                                      (do (rf/dispatch [:clear-exceptions])
+                                                          (rf/dispatch [:submit-ratio @vals-ratio])))} "Adjust"]]]]]])
+
+         (let [vals-city (r/atom {:r-city ""})]
+           [:div.x_panel.tile.fixed_height_320.overflow_hidden
+            [:div.x_title
+             [:h2 "Cities"]
+             [:ul.nav.navbar-right.panel_toolbox
+              [:li [:a.collapse-link [:i.fa.fa-chevron-up]]]
+              [:li [:a.close-link [:i.fa.fa-close]]]]
+             [:div.clearfix]]
+            [:div.x_content
+             [:p.text-muted.font-13.m-b-30 "Add more cities to the system"]
+             [:a {:href "#" :data-toggle "modal" :data-target ".bs-example-modal-sm"} "view cities"]
+             (when-let [error-message @(rf/subscribe [:common/error])]
+               [:p {:style {:color "red"}} error-message])
+             [:form#demo-form3.form-horizontal.form-label-left {:action      "#" :data-parsley-validate "true"
+                                                                :on-key-down #(if (= (.-key %) "Enter")
+                                                                                (if (not (s/valid? ::r-city (:r-city (string/trim @vals-city))))
+                                                                                  (do (rf/dispatch [:common/set-error "Enter a city name"]))
+                                                                                  (do (rf/dispatch [:clear-exceptions])
+                                                                                      (rf/dispatch [:submit-city @vals-city]))))}
+              [:div.item.form-group
+               [:label.col-form-label.col-md-3.col-sm-3.label-align {:for "city-name"} "Name"]
+               [:div.col-md-6.col-sm-6
+                [:input#city-name.form-control {:type        "text"
+                                                :placeholder "Enter city name"
+                                                :on-change   #(swap! vals-city assoc :r-city (-> % .-target .-value))}]]]
+              [:div.item.form-group
+               [:div.col-md-6.col-sm-6.offset-md-3
+                [:button.btn.btn-success {:type "button"
+                                          :on-click #(if (= (.-key %) "Enter")
+                                                       (if (not (s/valid? ::r-city (:r-city (string/trim @vals-city))))
+                                                         (do (rf/dispatch [:common/set-error "Enter a city name"]))
+                                                         (do (rf/dispatch [:clear-exceptions]) (println @vals-city)
+                                                             (rf/dispatch [:submit-city @vals-city]))))} "Submit"]]]]
+             ]
+            ])]
         ]]
       [:br]]
      [:footer
       [:div.pull-right "© 2020 YearUp"]
-      [:div.clearfix]]]])
-  )
+      [:div.clearfix]]]]) )
 
 (defn page []
   (if-let [page @(rf/subscribe [:common/page])]
     [:div
-     ;[navbar]
      [page]]))
 
 (defn navigate! [match _]
@@ -227,8 +263,8 @@
     [["/" {:name        :home
            :view        #'home-page
            :controllers [{:start (fn [_] (rf/dispatch [:page/init-admin]))}]}]
-     ["/about" {:name :about
-                :view #'about-page}]]))
+     ["/setting" {:name :setting
+                :view #'setting-page}]]))
 
 (defn start-router! []
   (rfe/start!
