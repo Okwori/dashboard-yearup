@@ -234,7 +234,7 @@
   (rfe/start!
     router
     navigate!
-    {}))
+    {:use-fragment false}))
 
 ;; -------------------------
 ;; Initialize app
