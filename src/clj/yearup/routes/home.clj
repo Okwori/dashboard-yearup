@@ -13,21 +13,22 @@
     [yearup.middleware :as middleware]))
 
 (s/def ::ratio (s/and integer? pos? #(<= % 100)))
-(s/def ::city (s/and string? not-empty #(not-empty (string/trim %))))
+(s/def ::city-fields (s/and string? not-empty #(not-empty (string/trim %))))
 
 (defn home-page [{:keys [flash] :as request}]
-  (let [report (query/report)
-        cities (query/get-cities)]
+  (let [report (query/report)]
     (layout/render request
                    "home.html"
-                   (merge {:report report :cities cities}
+                   (merge {:report report}
                           (select-keys flash [:errors])))))
 
-(defn setting-page [request]
-  (let [report (query/get-full-report)]
+(defn setting-page [{:keys [flash] :as request}]
+  (let [report (query/get-full-report)
+        cities (query/get-cities)]
     (layout/render request
                   "setting.html"
-                  {:report report})))
+                   (merge {:report report :cities cities}
+                          (select-keys flash [:errors])))))
 
 ;(defn setting-page [request]
 ;  (let [metabase-site-url (env :metabase-site-url)
@@ -48,15 +49,16 @@
                 (assoc :flash (assoc params :errors {:message {:ratio "Enter a valid ratio %"}}))))
         (do
           (query/update-ratio (Integer/parseInt (:ratio params)))
-          (response/found "/")))
-
-    (contains? params :city)
-      (if (not (s/valid? ::city (:city params)))
-        (do (-> (response/found "/")
-                (assoc :flash (assoc params :errors {:message {:city "Enter a valid city name"}}))))
-        (do
-          (query/create-city (:city params))
           (response/found "/")))))
+
+(defn add-city! [{:keys [params]}]
+  (contains? params :city)
+    (if (not (or (s/valid? ::city-fields (:city params)) (s/valid? ::city-fields (:city-question params))))
+      (do (-> (response/found "/setting")
+              (assoc :flash (assoc params :errors {:message {:city "Enter a valid value for all fields"}}))))
+      (do
+        (query/create-city (:city params) (:city-question params) (:city-image params))
+        (response/found "/setting"))))
 
 (defn home-routes []
   [""
@@ -64,7 +66,8 @@
                  middleware/wrap-formats]}
    ["/" {:get home-page
          :post adjust-ratio!}]
-   ["/setting" {:get setting-page}]
+   ["/setting" {:get setting-page
+                :post add-city!}]
    ["/graphiql" {:get (fn [request] (layout/render request "graphiql.html"))}]
    ["/docs" {:get (fn [_]
                     (-> (response/ok (-> "docs/docs.md" io/resource slurp))
