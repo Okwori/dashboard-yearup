@@ -189,8 +189,8 @@ WHERE id = :id;
 -- :name create-city! :! :n
 -- :doc creates a new city record
 INSERT INTO city
-    (name)
-VALUES (:name);
+    (name, question, background_image)
+VALUES (:name, :city-question, :background-image);
 
 -- :name update-city! :! :n
 -- :doc updates an existing city record
