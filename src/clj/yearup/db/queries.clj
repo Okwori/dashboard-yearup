@@ -6,7 +6,7 @@
   "Get a city with address specified"
   [id]
   (let [city-query (db/get-city {:id id})
-        address-query (into [] (db/get-address-by-city-id {:city-id (:id city-query)})) ]
+        address-query (into [] (db/get-address-by-city-id {:city-id (:id city-query)}))]
     {:id (:id city-query) :name (:name city-query) :addresses address-query}))
 
 (defn get-cities
@@ -46,7 +46,9 @@
   [user-id options-coll city-id]
   (let [q (map #(db/create-answer! {:option-id % :user-id user-id :city-id city-id}) options-coll)
         q1 (Integer/parseInt (:value (db/get-setting {:name "RATIO"})))
-        q2 (if (every? #(= % 1) q) (filter #(not (nil? %)) (map #(db/get-option-by-sentiment-not-null {:id %}) options-coll)))
+        q2 (if (every? #(= % 1) q)
+             (filter #(not (nil? %))
+                     (map #(db/get-option-by-sentiment-not-null {:id %}) options-coll)))
         q3 (map #(:sentiment %) q2)
         q4 (* (/ (apply + q3) (count q3)) 100)]
     (cond
@@ -100,8 +102,10 @@
 
 (defn create-city
   "Create a new city record with the name"
-  [city-name]
-  (db/create-city! {:name city-name}))
+  [city-name city-question background-image]
+  (db/create-city! {:name city-name
+                    :city-question city-question
+                    :background-image background-image}))
 
 (defn report
   "Get all the data for the admin dashboard grid"
@@ -115,24 +119,19 @@
                             :email     (:email (db/get-user {:id (:user_id (first m))}))
                             :date      (:date (first m))
                             :accepted  (let [options-m (map #(:option_id %) m)
-                                             sentiments (map #(:sentiment (db/get-option {:id %})) options-m)
+                                             sentiments (map #(:sentiment (db/get-option {:id %}))
+                                                             options-m)
                                              total-sentiments (apply + sentiments)
                                              count-m (count m)]
                                          (if (>= (* (/ total-sentiments count-m) 100) ratio)
-                                           "Yes" "No"))
-                            ;:responses (into [] (map (fn [item-m]
-                            ;                           (let [option-m (db/get-option {:id (:option_id item-m)})]
-                            ;                             {:question (:question (db/get-question {:quiz-id 1
-                            ;                                                                     :id      (:question_id option-m)}))
-                            ;                              :option   (:name option-m)})) m))
-                            })) distinct-user-ids)
+                                           "Yes" "No"))})) distinct-user-ids)
         total (count distinct-user-ids)
         positive (apply + (map #(if (= (:accepted %) "Yes") 1 0) responses))]
     {:totalNo    total
      :positiveNo positive
      :negativeNo (- total positive)
      :ratio      ratio
-     :response   (into [] responses)}) )
+     :response   (into [] responses)}))
 
 (defn get-answer-by-user [quiz-id email]
   (let [user-id (:id (db/get-user-by-email {:email email}))
