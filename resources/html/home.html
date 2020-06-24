@@ -205,7 +205,7 @@
 
                     <div class="col-md-4 col-sm-4 ">
 
-                        <div class="x_panel tile fixed_height_320 overflow_hidden">
+                        <div class="x_panel tile overflow_hidden">
                             <div class="x_title">
                                 <h2>Setting - Ratio</h2>
                                 <ul class="nav navbar-right panel_toolbox">
@@ -238,77 +238,6 @@
                                         </div>
                                     </div>
                                 </form>
-                            </div>
-                        </div>
-
-                        <div class="x_panel tile fixed_height_320 overflow_hidden">
-                            <div class="x_title">
-                                <h2>Setting - City</h2>
-                                <ul class="nav navbar-right panel_toolbox">
-                                    <li><a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
-                                    </li>
-                                    <li><a class="close-link"><i class="fa fa-close"></i></a>
-                                    </li>
-                                </ul>
-                                <div class="clearfix"></div>
-                            </div>
-                            <div class="x_content">
-                                <p class="text-muted font-13 m-b-30">
-                                    Add additional cities
-                                </p>
-                                <form id="demo-form" method="post" action="/" novalidate class="form-horizontal form-label-left">
-                                    {% csrf-field %}
-                                    <a href="#" data-toggle="modal" data-target=".bs-example-modal-sm">View Cities</a>
-                                    {% if errors.message.city %}
-                                    <div class="text-danger">{{errors.message.city|join}}</div>
-                                    {% endif %}
-                                    <div class="item form-group">
-                                        <label class="col-form-label col-md-3 col-sm-3 label-align" for="city">City
-                                        </label>
-                                        <div class="col-md-6 col-sm-6 ">
-                                            <input type="text" name="city" value="{{city}}" id="city" placeholder="" class="form-control" required="required">
-                                        </div>
-                                    </div>
-                                    <div class="item form-group">
-                                        <div class="col-md-6 col-sm-6 offset-md-3">
-                                            <input type="submit" class="btn btn-success" value="Add">
-                                        </div>
-                                    </div>
-                                </form>
-                                <div class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-hidden="true">
-                                    <div class="modal-dialog modal-sm">
-                                        <div class="modal-content">
-
-                                            <div class="modal-header">
-                                                <h4 class="modal-title" id="myModalLabel2">Cities</h4>
-                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span>
-                                                </button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <table class="table table-striped table-bordered">
-                                                    <thead>
-                                                    <tr>
-                                                        <td>No.</td>
-                                                        <td>City</td>
-                                                    </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                    {% for city in cities %}
-                                                    <tr>
-                                                        <td>{{city.id}}</td>
-                                                        <td>{{city.name}}</td>
-                                                    </tr>
-                                                    {% endfor %}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                                            </div>
-
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
