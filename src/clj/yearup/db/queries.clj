@@ -7,7 +7,11 @@
   [id]
   (let [city-query (db/get-city {:id id})
         address-query (into [] (db/get-address-by-city-id {:city-id (:id city-query)}))]
-    {:id (:id city-query) :name (:name city-query) :addresses address-query}))
+    {:id (:id city-query)
+     :name (:name city-query)
+     :background-image (:background_image city-query)
+     :addresses address-query
+     :data (:data city-query)}))
 
 (defn get-cities
   "Gets the vector of the cities defined for YearUp"
@@ -102,10 +106,12 @@
 
 (defn create-city
   "Create a new city record with the name"
-  [city-name city-question background-image]
+  [city-name city-question background-image file-data content-type]
   (db/create-city! {:name city-name
                     :city-question city-question
-                    :background-image background-image}))
+                    :background_image background-image
+                    :data file-data
+                    :type content-type}))
 
 (defn report
   "Get all the data for the admin dashboard grid"
