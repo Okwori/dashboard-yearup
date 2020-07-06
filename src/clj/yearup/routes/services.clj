@@ -12,7 +12,8 @@
     [yearup.middleware.exception :as exception]
     [ring.util.http-response :refer :all]
     [clojure.java.io :as io]
-    [yearup.db.queries :as db]))
+    [yearup.db.queries :as db])
+  (:import (java.io ByteArrayInputStream)))
 
 (defn service-routes []
   ["/api/v1"
@@ -157,13 +158,29 @@
             :handler    (fn [{{{:keys []} :query} :parameters}]
                           {:status 200
                            :body   {:data {:cities (db/get-cities)}}})}}]
-    ["/create"
-     {:post {:summary    "create a new city record and returns 1"
-             :parameters {:body {:name string?}}
-             :responses  {200 {:body {:id int?}}}
-             :handler    (fn [{{{:keys [name]} :body} :parameters}]
-                           {:status 200
-                            :body   (db/create-city name)})}}]]
+    ;["/create"
+    ; {:post {:summary    "create a new city record and returns 1"
+    ;         :parameters {:body {:name string?}}
+    ;         :responses  {200 {:body {:id int?}}}
+    ;         :handler    (fn [{{{:keys [name]} :body} :parameters}]
+    ;                       {:status 200
+    ;                        :body   (db/create-city name)})}}]
+    ]
+   ["/files"
+    {:swagger {:tags ["files"]}}
+
+    ["/download/:id"
+     {:get {:summary    "downloads a file"
+            :parameters {:path {:id int?}}
+            :swagger    {:produces ["image/png"]}
+            :handler    (fn [{{{:keys [id]} :path} :parameters}]
+                          (let [image-cities (db/get-city id)
+                                image (-> image-cities
+                                          :data
+                                          (ByteArrayInputStream.))]
+                            {:status  200
+                             :headers {"Content-Type" (:content-type image-cities)}
+                             :body    image}))}}]]
 
    ["/setting"
     {:get {:summary    "returns a particular setting with the name specified"
@@ -172,6 +189,7 @@
            :handler    (fn [{{{:keys [name]} :body} :parameters}]
                          {:status 200
                           :body   {:data (db/get-setting name)}})}}]
+
    ["/update"
     ["/ratio"
      {:post {:summary    "adjust system ratio"
