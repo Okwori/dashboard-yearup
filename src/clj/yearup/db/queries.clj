@@ -11,7 +11,8 @@
      :name (:name city-query)
      :background-image (:background_image city-query)
      :addresses address-query
-     :data (:data city-query)}))
+     :data (:data city-query)
+     :content-type (:type city-query)}))
 
 (defn get-cities
   "Gets the vector of the cities defined for YearUp"
