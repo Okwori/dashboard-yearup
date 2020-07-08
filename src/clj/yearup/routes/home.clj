@@ -5,15 +5,15 @@
     [clojure.string :as string]
     [clojure.spec.alpha :as s]
     [ring.util.http-response :as response]
-    [ring.util.response]
     [yearup.config :refer [env]]
-    [yearup.db.core :as db]
     [yearup.db.queries :as query]
     [yearup.layout :as layout]
-    [yearup.middleware :as middleware]))
+    [yearup.middleware :as middleware])
+  (:import [java.io ByteArrayOutputStream]))
 
 (s/def ::ratio (s/and integer? pos? #(<= % 100)))
 (s/def ::city-fields (s/and string? not-empty #(not-empty (string/trim %))))
+(s/def ::city-image (s/and string? not-empty #(= (:content-type %) "image/png")))
 
 (defn home-page [{:keys [flash] :as request}]
   (let [report (query/report)]
@@ -26,7 +26,7 @@
   (let [report (query/get-full-report)
         cities (query/get-cities)]
     (layout/render request
-                  "setting.html"
+                   "setting.html"
                    (merge {:report report :cities cities}
                           (select-keys flash [:errors])))))
 
@@ -51,13 +51,28 @@
           (query/update-ratio (Integer/parseInt (:ratio params)))
           (response/found "/")))))
 
-(defn add-city! [{:keys [params]}]
-  (contains? params :city)
-    (if (not (or (s/valid? ::city-fields (:city params)) (s/valid? ::city-fields (:city-question params))))
+(defn file->bytes [file]
+  (with-open [in (io/input-stream file)
+              out (ByteArrayOutputStream.)]
+    (io/copy in out)
+    (.toByteArray out)))
+
+(defn add-city!
+  [{{:keys [city city-question file] :as params} :params}]
+    (if (not (and (s/valid? ::city-fields (:city params))
+                  (s/valid? ::city-fields (:city-question params))
+                  (s/valid? ::city-image file)))
       (do (-> (response/found "/setting")
-              (assoc :flash (assoc params :errors {:message {:city "Enter a valid value for all fields"}}))))
+              (assoc :flash
+                     (assoc params :errors {:message {:city "Enter valid values for all fields"}}))))
       (do
-        (query/create-city (:city params) (:city-question params) (:city-image params))
+        ;(dissoc (:error params) :message)
+        (let [byte (file->bytes (:tempfile file))]
+          (query/create-city city
+                             city-question
+                             (:filename file)
+                             byte
+                             (:content-type file)))
         (response/found "/setting"))))
 
 (defn home-routes []
